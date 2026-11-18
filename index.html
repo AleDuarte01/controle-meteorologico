@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Georreferenciado</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS (Mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/20 p-6 sm:p-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl mb-3 shadow-inner">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">Registro de Localização</h1>
+            <p class="text-sm text-slate-500 mt-1">Capture suas coordenadas e envie os dados em tempo real.</p>
+        </div>
+
+        <!-- Form -->
+        <form id="geoForm" class="space-y-4">
+            
+            <!-- Campo Local (entry.1182805071) -->
+            <div>
+                <label for="local" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Identificação do Local</label>
+                <input type="text" id="local" name="entry.1182805071" required 
+                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
+                    placeholder="Ex: Matriz, Obra Setor A, Cliente B...">
+            </div>
+
+            <!-- Coordenadas Grid (Latitude e Longitude) -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="latitude" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Latitude</label>
+                    <input type="text" id="latitude" name="entry.1175504530" required readonly
+                        class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-600 text-sm font-mono cursor-not-allowed"
+                        placeholder="Aguardando GPS...">
+                </div>
+                <div>
+                    <label for="longitude" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Longitude</label>
+                    <input type="text" id="longitude" name="entry.1875852761" required readonly
+                        class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-600 text-sm font-mono cursor-not-allowed"
+                        placeholder="Aguardando GPS...">
+                </div>
+            </div>
+
+            <!-- Botão Atualizar GPS -->
+            <button type="button" id="geoBtn" 
+                class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium rounded-xl transition duration-200 text-sm shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Atualizar Coordenadas GPS
+            </button>
+
+            <!-- Pré-visualização do Mapa -->
+            <div id="mapContainer" class="hidden space-y-1">
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Localização Capturada</label>
+                <div id="map" class="w-full h-36 rounded-xl border border-slate-200 shadow-inner z-0"></div>
+            </div>
+
+            <!-- Alerta de Feedback -->
+            <div id="statusAlert" class="hidden p-3 rounded-xl text-sm font-medium text-center"></div>
+
+            <!-- Botão Enviar -->
+            <button type="submit" id="submitBtn"
+                class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+                <span id="btnText">Enviar Registro</span>
+                <svg id="spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Endpoint oficial de submissão do Google Forms convertido para formResponse
+        const GOOGLE_FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSfzIRvcGTBq0JpTAcZKK36FD60xdUcpNtEHN9QALB7E5mtuqA/formResponse";
+        
+        const form = document.getElementById('geoForm');
+        const geoBtn = document.getElementById('geoBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const statusAlert = document.getElementById('statusAlert');
+        const mapContainer = document.getElementById('mapContainer');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+
+        let map = null;
+        let marker = null;
+
+        // Tenta obter geolocalização ao carregar a página
+        window.addEventListener('DOMContentLoaded', () => {
+            getGeoLocation();
+        });
+
+        geoBtn.addEventListener('click', getGeoLocation);
+
+        function getGeoLocation() {
+            if (!navigator.geolocation) {
+                showStatus('Geolocalização não é suportada pelo seu navegador.', 'error');
+                return;
+            }
+
+            geoBtn.disabled = true;
+            geoBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Buscando GPS...
+            `;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lng = position.coords.longitude.toFixed(6);
+
+                    latInput.value = lat;
+                    lngInput.value = lng;
+
+                    geoBtn.disabled = false;
+                    geoBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Atualizar Coordenadas GPS
+                    `;
+
+                    submitBtn.disabled = false;
+                    showStatus('Localização capturada com sucesso!', 'success');
+                    updateMap(parseFloat(lat), parseFloat(lng));
+                },
+                (error) => {
+                    geoBtn.disabled = false;
+                    geoBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Atualizar Coordenadas GPS
+                    `;
+                    let errorMsg = 'Erro ao obter localização.';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMsg = 'Permissão de GPS negada. Verifique as configurações do navegador.';
+                    }
+                    showStatus(errorMsg, 'error');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        function updateMap(lat, lng) {
+            mapContainer.classList.remove('hidden');
+            
+            if (!map) {
+                map = L.map('map').setView([lat, lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+                marker = L.marker([lat, lng]).addTo(map);
+            } else {
+                map.setView([lat, lng], 16);
+                marker.setLatLng([lat, lng]);
+            }
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+
+        function showStatus(message, type) {
+            statusAlert.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200', 'bg-rose-50', 'text-rose-700', 'border-rose-200');
+            if (type === 'success') {
+                statusAlert.classList.add('bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200');
+            } else {
+                statusAlert.classList.add('bg-rose-50', 'text-rose-700', 'border', 'border-rose-200');
+            }
+            statusAlert.textContent = message;
+            
+            if (type === 'success') {
+                setTimeout(() => statusAlert.classList.add('hidden'), 4000);
+            }
+        }
+
+        // Submissão assíncrona para o Google Forms
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!latInput.value || !lngInput.value) {
+                showStatus('Aguarde a captura das coordenadas antes de enviar.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            btnText.textContent = 'Enviando...';
+            spinner.classList.remove('hidden');
+
+            const formData = new URLSearchParams();
+            formData.append('entry.1182805071', document.getElementById('local').value);
+            formData.append('entry.1175504530', latInput.value);
+            formData.append('entry.1875852761', lngInput.value);
+
+            try {
+                // Utiliza mode 'no-cors' para enviar dados diretamente ao Google Forms sem erro de CORS
+                await fetch(GOOGLE_FORM_ACTION, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: formData
+                });
+
+                showStatus('Dados enviados com sucesso para o formulário!', 'success');
+                form.reset();
+                latInput.value = '';
+                lngInput.value = '';
+                submitBtn.disabled = true;
+                mapContainer.classList.add('hidden');
+            } catch (err) {
+                console.error(err);
+                showStatus('Erro ao enviar dados. Tente novamente.', 'error');
+            } finally {
+                btnText.textContent = 'Enviar Registro';
+                spinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
